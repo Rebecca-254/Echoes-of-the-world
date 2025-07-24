@@ -4,8 +4,9 @@
 from django.shortcuts import render
 from django.views.generic import TemplateView
 from news.models import Article, Category
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.views import View
+from django.contrib import messages
 
 class HomeView(TemplateView):
     template_name = 'core/home.html'
@@ -23,25 +24,21 @@ class HomeView(TemplateView):
             is_published=True
         ).select_related('author', 'category').order_by('-created_at')[:6]
         
-        # Get articles by category
-        context['sports_articles'] = Article.objects.filter(
-            is_published=True, 
-            category__name='Sports'
-        ).select_related('author').order_by('-created_at')[:4]
-        
-        context['business_articles'] = Article.objects.filter(
-            is_published=True, 
-            category__name='Business'
-        ).select_related('author').order_by('-created_at')[:4]
-        
-        context['entertainment_articles'] = Article.objects.filter(
-            is_published=True, 
-            category__name='Entertainment'
-        ).select_related('author').order_by('-created_at')[:4]
+        # Category sections for homepage
+        category_sections = {}
+        categories = Category.objects.all()
+        for category in categories:
+            articles = Article.objects.filter(
+                is_published=True,
+                category=category
+            ).select_related('author', 'category').order_by('-created_at')[:4]
+            if articles.exists():
+                category_sections[category] = articles
+        context['category_sections'] = category_sections
         
         # Get categories with article count
         context['categories'] = Category.objects.annotate(
-            article_count=Count('article', filter=models.Q(article__is_published=True))
+            article_count=Count('article', filter=Q(article__is_published=True))
         )
         
         return context
@@ -60,7 +57,7 @@ class ContactView(TemplateView):
         
         # Here you would typically send an email or save to database
         # For now, just show a success message
-        from django.contrib import messages
+        
         messages.success(request, 'Thank you for your message. We will get back to you soon!')
         
         return self.get(request, *args, **kwargs)

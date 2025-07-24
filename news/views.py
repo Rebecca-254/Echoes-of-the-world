@@ -1,4 +1,5 @@
 from django.shortcuts import render
+from django.views.generic import TemplateView
 
 # Create your views here.
 from django.shortcuts import render, get_object_or_404, redirect
@@ -14,6 +15,14 @@ import json
 from django.views import View
 from .models import Article, Category, Comment, Reaction, Newsletter, Tag
 from .forms import CommentForm, NewsletterForm, SearchForm
+
+class HomePageView(TemplateView):
+    template_name = 'news/home.html'  # Correct path to template
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['categories'] = Category.objects.all()
+        return context
 
 class ArticleListView(ListView):
     model = Article
@@ -238,4 +247,4 @@ class NewsletterSubscribeView(View):
             return redirect('core:home')
         
         messages.error(request, 'Invalid email address')
-        return redirect('core:home') 
+        return redirect('core:home')
